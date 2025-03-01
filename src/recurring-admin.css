@@ -1,0 +1,96 @@
+/**
+ * CSS for the improved recurring donations admin page
+ */
+
+/* Hide donation details by default */
+.hidden {
+    display: none;
+}
+
+/* Donation details modal styling */
+#donation-details-modal {
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+}
+
+#donation-details-container h2 {
+    margin-top: 0;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    cursor: move;
+}
+
+#donation-details-container h3 {
+    margin: 20px 0 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+#donation-details-container table {
+    margin-bottom: 20px;
+}
+
+#donation-details-container th {
+    width: 30%;
+}
+
+/* Table column widths */
+.column-cb {
+    width: 5%;
+}
+
+.column-transaction_id {
+    width: 15%;
+}
+
+.column-time {
+    width: 12%;
+}
+
+.column-name,
+.column-email {
+    width: 15%;
+}
+
+.column-amount,
+.column-full_amount {
+    width: 8%;
+}
+
+.column-transaction_type,
+.column-transaction_status,
+.column-future_count {
+    width: 10%;
+}
+
+.column-campaign_name {
+    width: 15%;
+}
+
+.column-message {
+    width: 15%;
+}
+
+/* Improve message column display */
+td.column-message {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+td.column-message:hover {
+    white-space: normal;
+    overflow: visible;
+}
+
+/* ThickBox adjustments */
+#TB_window {
+    z-index: 100050 !important;
+}
+
+/* Clear floats in the tablenav */
+.tablenav {
+    clear: both;
+}
