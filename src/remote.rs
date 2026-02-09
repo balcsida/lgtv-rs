@@ -1,11 +1,12 @@
 use crate::error::{LgtvError, Result};
 use crate::payload;
 use base64::Engine;
-use futures::{SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::{mpsc, Mutex};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use wake_on_lan::MagicPacket;
@@ -550,12 +551,7 @@ impl LgtvRemote {
     }
 
     pub async fn notification_with_icon(&mut self, message: &str, icon_url: &str) -> Result<Value> {
-        let icon_data = reqwest::get(icon_url)
-            .await
-            .map_err(|e| LgtvError::CommandError(format!("Failed to fetch icon: {}", e)))?
-            .bytes()
-            .await
-            .map_err(|e| LgtvError::CommandError(format!("Failed to read icon data: {}", e)))?;
+        let icon_data = Self::http_get_bytes(icon_url).await?;
 
         let icon_b64 = base64::engine::general_purpose::STANDARD.encode(&icon_data);
         let extension = icon_url.rsplit('.').next().unwrap_or("png");
@@ -570,6 +566,79 @@ impl LgtvRemote {
             None,
         )
         .await
+    }
+
+    async fn http_get_bytes(url: &str) -> Result<Vec<u8>> {
+        let url_body = url
+            .strip_prefix("http://")
+            .or_else(|| url.strip_prefix("https://"))
+            .ok_or_else(|| LgtvError::CommandError("Invalid URL scheme".to_string()))?;
+
+        let (host_port, path) = match url_body.find('/') {
+            Some(i) => (&url_body[..i], &url_body[i..]),
+            None => (url_body, "/"),
+        };
+
+        let host = host_port.split(':').next().unwrap_or(host_port);
+        let port: u16 = if url.starts_with("https://") {
+            443
+        } else {
+            host_port
+                .split(':')
+                .nth(1)
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(80)
+        };
+
+        let request = format!(
+            "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+            path, host
+        );
+
+        if url.starts_with("https://") {
+            let tcp_stream = tokio::net::TcpStream::connect((host, port))
+                .await
+                .map_err(|e| LgtvError::CommandError(format!("Failed to connect: {}", e)))?;
+            let connector = native_tls::TlsConnector::new()
+                .map_err(|e| LgtvError::CommandError(format!("TLS error: {}", e)))?;
+            let connector = tokio_native_tls::TlsConnector::from(connector);
+            let mut stream = connector
+                .connect(host, tcp_stream)
+                .await
+                .map_err(|e| LgtvError::CommandError(format!("TLS connect error: {}", e)))?;
+            stream
+                .write_all(request.as_bytes())
+                .await
+                .map_err(|e| LgtvError::CommandError(format!("Failed to send request: {}", e)))?;
+            let mut response = Vec::new();
+            stream
+                .read_to_end(&mut response)
+                .await
+                .map_err(|e| LgtvError::CommandError(format!("Failed to read response: {}", e)))?;
+            Self::extract_http_body(response)
+        } else {
+            let mut stream = tokio::net::TcpStream::connect((host, port))
+                .await
+                .map_err(|e| LgtvError::CommandError(format!("Failed to connect: {}", e)))?;
+            stream
+                .write_all(request.as_bytes())
+                .await
+                .map_err(|e| LgtvError::CommandError(format!("Failed to send request: {}", e)))?;
+            let mut response = Vec::new();
+            stream
+                .read_to_end(&mut response)
+                .await
+                .map_err(|e| LgtvError::CommandError(format!("Failed to read response: {}", e)))?;
+            Self::extract_http_body(response)
+        }
+    }
+
+    fn extract_http_body(response: Vec<u8>) -> Result<Vec<u8>> {
+        let header_end = response
+            .windows(4)
+            .position(|w| w == b"\r\n\r\n")
+            .ok_or_else(|| LgtvError::CommandError("Invalid HTTP response".to_string()))?;
+        Ok(response[header_end + 4..].to_vec())
     }
 
     pub async fn create_alert(&mut self, message: &str, buttons: Value) -> Result<Value> {

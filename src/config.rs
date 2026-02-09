@@ -5,18 +5,24 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+fn home_dir() -> Option<PathBuf> {
+    env::var_os("HOME")
+        .or_else(|| env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+}
+
 fn config_search_paths() -> Vec<PathBuf> {
     let mut paths = vec![PathBuf::from("/etc/lgtv/config.json")];
 
     // XDG_CONFIG_HOME or ~/.config
     if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
         paths.push(PathBuf::from(xdg).join("lgtv/config.json"));
-    } else if let Some(home) = dirs::home_dir() {
+    } else if let Some(home) = home_dir() {
         paths.push(home.join(".config/lgtv/config.json"));
     }
 
     // Legacy ~/.lgtv
-    if let Some(home) = dirs::home_dir() {
+    if let Some(home) = home_dir() {
         paths.push(home.join(".lgtv/config.json"));
     }
 

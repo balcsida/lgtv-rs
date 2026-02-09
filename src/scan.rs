@@ -1,5 +1,4 @@
 use crate::error::Result;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::str;
@@ -11,6 +10,20 @@ pub struct TvDevice {
     pub uuid: Option<String>,
     pub tv_name: Option<String>,
     pub address: String,
+}
+
+fn extract_uuid(response: &str) -> Option<String> {
+    let start = response.find("uuid:")? + 5;
+    let end = response[start..].find(':')? + start;
+    Some(response[start..end].to_string())
+}
+
+fn extract_tv_name(response: &str) -> Option<String> {
+    let marker = "DLNADeviceName.lge.com:";
+    let start = response.find(marker)? + marker.len();
+    let rest = &response[start..];
+    let end = rest.find(['\r', '\n'])?;
+    Some(rest[..end].trim().to_string())
 }
 
 pub async fn scan_for_tvs() -> Result<Vec<TvDevice>> {
@@ -29,9 +42,6 @@ pub async fn scan_for_tvs() -> Result<Vec<TvDevice>> {
     let mut addresses = Vec::new();
     let attempts = 4;
 
-    let uuid_regex = Regex::new(r"uuid:(.*?):").ok();
-    let tv_name_regex = Regex::new(r"DLNADeviceName.lge.com:(.*?)[\r\n]").ok();
-
     for _ in 0..attempts {
         socket.send_to(ssdp_request.as_bytes(), multicast_addr)?;
 
@@ -41,21 +51,9 @@ pub async fn scan_for_tvs() -> Result<Vec<TvDevice>> {
                 let response = str::from_utf8(&buf[..len]).unwrap_or("");
 
                 if response.contains("LG") {
-                    let uuid = uuid_regex
-                        .as_ref()
-                        .and_then(|re| re.captures(response))
-                        .and_then(|caps| caps.get(1))
-                        .map(|m| m.as_str().to_string());
-
-                    let tv_name = tv_name_regex
-                        .as_ref()
-                        .and_then(|re| re.captures(response))
-                        .and_then(|caps| caps.get(1))
-                        .map(|m| m.as_str().trim().to_string());
-
                     addresses.push(TvDevice {
-                        uuid,
-                        tv_name,
+                        uuid: extract_uuid(response),
+                        tv_name: extract_tv_name(response),
                         address: addr.ip().to_string(),
                     });
                 } else {
