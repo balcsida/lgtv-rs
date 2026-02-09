@@ -62,7 +62,9 @@ pub fn find_config() -> Result<PathBuf> {
                             writable_path = Some(path.clone());
                             break;
                         }
-                        Err(e) => log::debug!("Failed to create directory {}: {}", dir.display(), e),
+                        Err(e) => {
+                            log::debug!("Failed to create directory {}: {}", dir.display(), e)
+                        }
                     }
                 }
             }
@@ -70,7 +72,10 @@ pub fn find_config() -> Result<PathBuf> {
     }
 
     writable_path.ok_or_else(|| {
-        let paths_str: Vec<String> = search_paths.iter().map(|p| p.display().to_string()).collect();
+        let paths_str: Vec<String> = search_paths
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect();
         LgtvError::ConfigError(format!(
             "Cannot find suitable config path to write, create one in {}",
             paths_str.join(" or ")

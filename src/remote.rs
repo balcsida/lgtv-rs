@@ -32,22 +32,16 @@ impl LgtvRemote {
         hostname: Option<&str>,
         ssl: bool,
     ) -> Result<Self> {
-        let client_key = key
-            .ok_or_else(|| LgtvError::AuthError("Client key is required".to_string()))?;
+        let client_key =
+            key.ok_or_else(|| LgtvError::AuthError("Client key is required".to_string()))?;
 
         let ip_addr = match ip {
             Some(ip) => ip.to_string(),
             None => match hostname {
                 Some(host) => {
-                    let socket_addr = (host, 0)
-                        .to_socket_addrs()?
-                        .next()
-                        .ok_or_else(|| {
-                            LgtvError::ConnectionError(format!(
-                                "Could not resolve hostname: {}",
-                                host
-                            ))
-                        })?;
+                    let socket_addr = (host, 0).to_socket_addrs()?.next().ok_or_else(|| {
+                        LgtvError::ConnectionError(format!("Could not resolve hostname: {}", host))
+                    })?;
                     socket_addr.ip().to_string()
                 }
                 None => {
@@ -219,9 +213,7 @@ impl LgtvRemote {
                 log::debug!("Response: {}", response);
                 Ok(response.get("payload").cloned().unwrap_or(json!({})))
             }
-            None => Err(LgtvError::CommandError(
-                "No response received".to_string(),
-            )),
+            None => Err(LgtvError::CommandError("No response received".to_string())),
         }
     }
 
@@ -234,9 +226,8 @@ impl LgtvRemote {
             LgtvError::CommandError("MAC address is required for power on".to_string())
         })?;
 
-        let mac_bytes = Self::parse_mac_address(mac_str).map_err(|e| {
-            LgtvError::CommandError(format!("Invalid MAC address format: {}", e))
-        })?;
+        let mac_bytes = Self::parse_mac_address(mac_str)
+            .map_err(|e| LgtvError::CommandError(format!("Invalid MAC address format: {}", e)))?;
 
         let magic_packet = MagicPacket::new(&mac_bytes);
         magic_packet.send().map_err(|e| {
@@ -247,7 +238,7 @@ impl LgtvRemote {
     }
 
     fn parse_mac_address(mac_str: &str) -> std::result::Result<[u8; 6], String> {
-        let parts: Vec<&str> = mac_str.split(|c| c == ':' || c == '-').collect();
+        let parts: Vec<&str> = mac_str.split([':', '-']).collect();
         if parts.len() != 6 {
             return Err(format!(
                 "MAC address should have 6 parts, found {}",
@@ -256,8 +247,8 @@ impl LgtvRemote {
         }
         let mut mac_bytes = [0u8; 6];
         for (i, part) in parts.iter().enumerate() {
-            mac_bytes[i] = u8::from_str_radix(part, 16)
-                .map_err(|_| format!("Invalid hex value: {}", part))?;
+            mac_bytes[i] =
+                u8::from_str_radix(part, 16).map_err(|_| format!("Invalid hex value: {}", part))?;
         }
         Ok(mac_bytes)
     }
@@ -298,12 +289,8 @@ impl LgtvRemote {
     // ──────────────────────────────────────────────
 
     pub async fn mute(&mut self, muted: bool) -> Result<Value> {
-        self.send_request(
-            "ssap://audio/setMute",
-            Some(json!({"mute": muted})),
-            None,
-        )
-        .await
+        self.send_request("ssap://audio/setMute", Some(json!({"mute": muted})), None)
+            .await
     }
 
     pub async fn set_volume(&mut self, level: u32) -> Result<Value> {
@@ -381,8 +368,7 @@ impl LgtvRemote {
     }
 
     pub async fn input_channel_down(&mut self) -> Result<Value> {
-        self.send_request("ssap://tv/channelDown", None, None)
-            .await
+        self.send_request("ssap://tv/channelDown", None, None).await
     }
 
     // ──────────────────────────────────────────────
@@ -432,12 +418,7 @@ impl LgtvRemote {
         .await
     }
 
-    pub async fn set_device_info(
-        &mut self,
-        id: &str,
-        icon: &str,
-        label: &str,
-    ) -> Result<Value> {
+    pub async fn set_device_info(&mut self, id: &str, icon: &str, label: &str) -> Result<Value> {
         self.send_request(
             "luna://com.webos.service.eim/setDeviceInfo",
             Some(json!({"id": id, "icon": icon, "label": label})),
@@ -451,12 +432,8 @@ impl LgtvRemote {
     // ──────────────────────────────────────────────
 
     pub async fn list_apps(&mut self) -> Result<Value> {
-        self.send_request(
-            "ssap://com.webos.applicationManager/listApps",
-            None,
-            None,
-        )
-        .await
+        self.send_request("ssap://com.webos.applicationManager/listApps", None, None)
+            .await
     }
 
     pub async fn list_launch_points(&mut self) -> Result<Value> {
@@ -572,11 +549,7 @@ impl LgtvRemote {
         .await
     }
 
-    pub async fn notification_with_icon(
-        &mut self,
-        message: &str,
-        icon_url: &str,
-    ) -> Result<Value> {
+    pub async fn notification_with_icon(&mut self, message: &str, icon_url: &str) -> Result<Value> {
         let icon_data = reqwest::get(icon_url)
             .await
             .map_err(|e| LgtvError::CommandError(format!("Failed to fetch icon: {}", e)))?
@@ -625,21 +598,13 @@ impl LgtvRemote {
     // ──────────────────────────────────────────────
 
     pub async fn input_3d_on(&mut self) -> Result<Value> {
-        self.send_request(
-            "ssap://com.webos.service.tv.display/set3DOn",
-            None,
-            None,
-        )
-        .await
+        self.send_request("ssap://com.webos.service.tv.display/set3DOn", None, None)
+            .await
     }
 
     pub async fn input_3d_off(&mut self) -> Result<Value> {
-        self.send_request(
-            "ssap://com.webos.service.tv.display/set3DOff",
-            None,
-            None,
-        )
-        .await
+        self.send_request("ssap://com.webos.service.tv.display/set3DOff", None, None)
+            .await
     }
 
     // ──────────────────────────────────────────────

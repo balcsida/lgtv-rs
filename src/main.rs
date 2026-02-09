@@ -55,7 +55,6 @@ enum Commands {
     },
 
     // ── Power ──────────────────────────────────
-
     /// Power on the TV (via Wake-on-LAN)
     On,
 
@@ -72,7 +71,6 @@ enum Commands {
     GetPowerState,
 
     // ── Audio ──────────────────────────────────
-
     /// Mute/unmute the TV
     Mute {
         /// Mute state (true/false)
@@ -107,7 +105,6 @@ enum Commands {
     },
 
     // ── TV Channels ───────────────────────────
-
     /// Get the current TV channel
     GetTvChannel,
 
@@ -127,7 +124,6 @@ enum Commands {
     InputChannelDown,
 
     // ── Media Controls ────────────────────────
-
     /// Media play
     InputMediaPlay,
 
@@ -144,7 +140,6 @@ enum Commands {
     InputMediaFastForward,
 
     // ── Input Switching ───────────────────────
-
     /// List external inputs (HDMI, etc.)
     ListInputs,
 
@@ -165,7 +160,6 @@ enum Commands {
     },
 
     // ── Applications ──────────────────────────
-
     /// List installed apps
     ListApps,
 
@@ -194,7 +188,6 @@ enum Commands {
     GetForegroundAppInfo,
 
     // ── Browser & YouTube ─────────────────────
-
     /// Open a URL in the browser
     OpenBrowserAt {
         /// URL to open
@@ -226,7 +219,6 @@ enum Commands {
     },
 
     // ── Notifications ─────────────────────────
-
     /// Send a notification message
     Notification {
         /// Message to display
@@ -256,7 +248,6 @@ enum Commands {
     },
 
     // ── 3D Display ────────────────────────────
-
     /// Enable 3D mode
     #[clap(name = "3d-on")]
     Input3dOn,
@@ -266,7 +257,6 @@ enum Commands {
     Input3dOff,
 
     // ── Picture Settings ──────────────────────
-
     /// Get picture settings
     GetPictureSettings,
 
@@ -277,7 +267,6 @@ enum Commands {
     },
 
     // ── System Info ───────────────────────────
-
     /// Get software version info
     SwInfo,
 
@@ -288,7 +277,6 @@ enum Commands {
     ListServices,
 
     // ── Misc ──────────────────────────────────
-
     /// Send the enter key
     SendEnterKey,
 
@@ -448,8 +436,7 @@ async fn main() -> Result<()> {
 
                 // All commands that use the remote
                 _ => {
-                    let mut remote =
-                        LgtvRemote::new(&tv_name, ip, mac, key, hostname, cli.ssl)?;
+                    let mut remote = LgtvRemote::new(&tv_name, ip, mac, key, hostname, cli.ssl)?;
 
                     match &cli.command {
                         // ── Power ─────────────────────────────
@@ -647,13 +634,12 @@ async fn main() -> Result<()> {
                             remote.notification_with_icon(message, icon_url).await?;
                         }
                         Commands::CreateAlert { message, buttons } => {
-                            let btn_value: Value =
-                                serde_json::from_str(buttons).map_err(|e| {
-                                    lgtv::error::LgtvError::CommandError(format!(
-                                        "Invalid JSON for buttons: {}",
-                                        e
-                                    ))
-                                })?;
+                            let btn_value: Value = serde_json::from_str(buttons).map_err(|e| {
+                                lgtv::error::LgtvError::CommandError(format!(
+                                    "Invalid JSON for buttons: {}",
+                                    e
+                                ))
+                            })?;
                             remote.connect().await?;
                             let resp = remote.create_alert(message, btn_value).await?;
                             print_response(&resp);
