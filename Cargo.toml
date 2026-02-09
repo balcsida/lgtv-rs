@@ -8,22 +8,26 @@ license = "MIT"
 repository = "https://github.com/your-username/lgtv-rs"
 
 [dependencies]
-tokio = { version = "1.36.0", features = ["full"] }
+tokio = { version = "1.36.0", features = ["rt-multi-thread", "net", "sync", "time", "macros", "io-util"] }
 tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 clap = { version = "4.4", features = ["derive"] }
-reqwest = { version = "0.12", features = ["json"] }
-futures = "0.3"
-anyhow = "1.0"
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
 thiserror = "1.0"
 log = "0.4"
 env_logger = "0.11"
-dirs = "5.0"
-mac_address = "1.1"
 wake-on-lan = "0.2"
-regex = "1.10"
 base64 = "0.21"
+native-tls = "0.2"
+tokio-native-tls = "0.3"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
 
 [lib]
 name = "lgtv"

@@ -1,6 +1,6 @@
 use crate::error::{LgtvError, Result};
 use crate::payload;
-use futures::{SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt};
 use serde_json::{json, Value};
 use std::net::{IpAddr, ToSocketAddrs};
 use std::str::FromStr;

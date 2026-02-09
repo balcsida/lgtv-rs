@@ -1,6 +1,6 @@
 use crate::error::{LgtvError, Result};
 use crate::remote::LgtvRemote;
-use futures::SinkExt;
+use futures_util::SinkExt;
 use tokio::net::TcpStream;
 use tokio::time::{sleep, Duration};
 use tokio_tungstenite::{
