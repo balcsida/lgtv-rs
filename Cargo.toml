@@ -23,6 +23,7 @@ dirs = "5.0"
 mac_address = "1.1"
 wake-on-lan = "0.2"
 regex = "1.10"
+base64 = "0.21"
 
 [lib]
 name = "lgtv"
