@@ -13,13 +13,12 @@ pub struct LgtvAuth {
     mac_address: Option<String>,
     ip: String,
     hostname: Option<String>,
-    name: String,
     ssl: bool,
     handshake_done: bool,
 }
 
 impl LgtvAuth {
-    pub fn new(name: &str, host: &str, ssl: bool) -> Result<Self> {
+    pub fn new(_name: &str, host: &str, ssl: bool) -> Result<Self> {
         let ip: String;
         let hostname: Option<String>;
         
@@ -51,7 +50,6 @@ impl LgtvAuth {
             mac_address,
             ip,
             hostname,
-            name: name.to_string(),
             ssl,
             handshake_done: false,
         })
